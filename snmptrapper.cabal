@@ -10,7 +10,7 @@ maintainer:          nenegi.01mo@gmail.com
 copyright:           2015, IMOKURI
 category:            Network
 build-type:          Simple
-cabal-version:       >=1.8
+cabal-version:       >=1.10
 
 executable snmptrapper
   main-is:             Main.hs
@@ -25,7 +25,7 @@ executable snmptrapper
                        bytestring,
                        cereal,
                        directory,
-                       mtl,
+                       mtl <=2.1.2,
                        network,
                        optparse-applicative,
                        parallel,
