@@ -22,7 +22,7 @@ sendTrap fin sent intval server (sec, msg) = do
       threadDelay intval
       sendTrap fin (sent+1) intval server (sec, msg)
     False -> do
-      putStrLn $ (show sent) ++ " traps were successfully sent by [" ++ sec ++ "]."
+      putStrLn $ show sent ++ " traps were successfully sent by [" ++ sec ++ "]."
       modifyMVar_ fin $ \n -> return (n+1)
 
 pendingFin :: MVar Int -> Int -> IO ()
@@ -30,6 +30,5 @@ pendingFin fin threads = readMVar fin >>= \f -> case f < threads of
   True -> do
     threadDelay 10000
     pendingFin fin threads
-  False -> do
-    return ()
+  False -> return ()
 

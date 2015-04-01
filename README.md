@@ -3,9 +3,9 @@ Tool that sends many SNMP traps for load test of SNMP manager
 
 ## Description
 
-Send SNMP traps by multi threads.
-Each thread is made by each section in configurations file.
-After specific time, each thread is stopped and output the number of sent trap.
+Send SNMP traps by multi threads.  
+Each thread is made by each section in configurations file.  
+After specific time, each thread is stopped and output the number of sent trap.  
 
 
 ## Constraint
@@ -52,9 +52,9 @@ After specific time, each thread is stopped and output the number of sent trap.
 
 ## Install
 
-`$ runhaskell Setup configure`
-`$ runhaskell Setup build`
-`$ runhaskell Setup install`
+`$ runhaskell Setup configure`  
+`$ runhaskell Setup build`  
+`$ runhaskell Setup install`  
 
 
 ## Usage
