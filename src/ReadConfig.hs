@@ -30,9 +30,9 @@ commandLineOptions' :: Parser CommandLineOptions
 commandLineOptions' = CommandLineOptions
   <$> strOption   ( long "config" <> metavar "CONFIGFILE" <> help "CONFIGFILE that is used for sending SNMP traps" )
   <*> strOption   ( long "host"   <> metavar "HOSTNAME"   <> help "HOSTNAME that is sent SNMP traps" )
-  <*> strOption   ( long "port"   <> metavar "PORT"       <> help "PORT that is sent SNMP traps"                 <> value "162"   <> showDefault )
-  <*> option auto ( long "intval" <> metavar "INTERVAL"   <> help "Transmission INTERVAL (micro second (10^-6))" <> value 1000000 <> showDefault )
-  <*> option auto ( long "timer"  <> metavar "TIMER"      <> help "Transmission TIMER (second)"                  <> value 10      <> showDefault )
+  <*> strOption   ( long "port"   <> metavar "PORT"       <> help "PORT that is sent SNMP traps"                <> value "162"   <> showDefault )
+  <*> option auto ( long "intval" <> metavar "INTERVAL"   <> help "Transmission INTERVAL (microsecond (10^-6))" <> value 1000000 <> showDefault )
+  <*> option auto ( long "timer"  <> metavar "TIMER"      <> help "Transmission TIMER (second)"                 <> value 10      <> showDefault )
 
 
 readConfig :: CommandLineOptions -> IO (Either CPError ConfigParser)

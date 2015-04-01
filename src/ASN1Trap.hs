@@ -51,11 +51,7 @@ asn1Trap1Data cp sec = [ Start Sequence                   -- SNMP packet start
         genericTrap = forceEither $ get cp sec "generic_trap" :: Integer
         specificTrap = forceEither $ get cp sec "specific_trap" :: Integer
         timeTicks = B.dropWhile (==0) $ encode (12345 :: Integer) -- This should be sysUpTime. But This tool use fixed number for high performance.
-        varbindOids1 = filter (/="") $ splitOneOf " \n" $ either (const "") id $ get cp sec "varbind_oid"
-        varbindOid1 = map ( map (\s -> read s :: Integer) . dropWhile (=="") . splitOn "." ) varbindOids1
-        varbindMsgs1 = filter (/="") $ splitOneOf "\n" $ either (const "") id $ get cp sec "varbind_msg"
-        varbindMsg1 = map ( encodeUtf8 . T.pack ) varbindMsgs1
-        varbind1 = concat $ zipWith (\o m -> [Start Sequence, OID o, OctetString m, End Sequence]) varbindOid1 varbindMsg1
+        varbind1 = varBindData $ filter (/="") $ splitOneOf "\n" $ either (const "") id $ get cp sec "varbind"
 
 
 asn1Trap2Data :: ConfigParser -> SectionSpec -> [ASN1]
@@ -86,8 +82,15 @@ asn1Trap2Data cp sec = [ Start Sequence                   -- SNMP packet start
         timeTicks = B.dropWhile (==0) $ encode (12345 :: Integer) -- This should be sysUpTime. But This tool use fixed number for high performance.
         snmpTrapOid = [1,3,6,1,6,3,1,1,4,1,0]
         snmpTrapOidValue = map (\s -> read s :: Integer) $ dropWhile (=="") $ splitOn "." $ forceEither $ get cp sec "snmptrap_oid"
-        varbindOids2 = filter (/="") $ splitOneOf " \n" $ either (const "") id $ get cp sec "varbind_oid"
-        varbindOid2 = map ( map (\s -> read s :: Integer) . dropWhile (=="") . splitOn "." ) varbindOids2
-        varbindMsgs2 = filter (/="") $ splitOneOf "\n" $ either (const "") id $ get cp sec "varbind_msg"
-        varbindMsg2 = map ( encodeUtf8 . T.pack ) varbindMsgs2
-        varbind2 = concat $ zipWith (\o m -> [Start Sequence, OID o, OctetString m, End Sequence]) varbindOid2 varbindMsg2
+        varbind2 = varBindData $ filter (/="") $ splitOneOf "\n" $ either (const "") id $ get cp sec "varbind"
+
+
+varBindData :: [String] -> [ASN1]
+varBindData [] = []
+varBindData (s:ss) = Start Sequence: oid: msg: End Sequence: varBindData ss
+  where o:t:m = words s
+        oid = OID (map (\s' -> read s' :: Integer) $ dropWhile (=="") $ splitOn "." o)
+        msg = case t of
+          "i" -> IntVal (read $ concat m)
+          _   -> OctetString (encodeUtf8 $ T.pack $ unwords m)
+
