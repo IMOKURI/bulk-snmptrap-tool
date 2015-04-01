@@ -51,11 +51,7 @@ asn1Trap1Data cp sec = [ Start Sequence                   -- SNMP packet start
         genericTrap = forceEither $ get cp sec "generic_trap" :: Integer
         specificTrap = forceEither $ get cp sec "specific_trap" :: Integer
         timeTicks = B.dropWhile (==0) $ encode (12345 :: Integer) -- This should be sysUpTime. But This tool use fixed number for high performance.
-        varbindOids1 = filter (/="") $ splitOneOf " \n" $ either (const "") id $ get cp sec "varbind_oid"
-        varbindOid1 = map ( map (\s -> read s :: Integer) . dropWhile (=="") . splitOn "." ) varbindOids1
-        varbindMsgs1 = filter (/="") $ splitOneOf "\n" $ either (const "") id $ get cp sec "varbind_msg"
-        varbindMsg1 = map ( encodeUtf8 . T.pack ) varbindMsgs1
-        varbind1 = concat $ zipWith (\o m -> [Start Sequence, OID o, OctetString m, End Sequence]) varbindOid1 varbindMsg1
+        varbind1 = varBindData $ filter (/="") $ splitOneOf "\n" $ either (const "") id $ get cp sec "varbind"
 
 
 asn1Trap2Data :: ConfigParser -> SectionSpec -> [ASN1]
@@ -68,12 +64,12 @@ asn1Trap2Data cp sec = [ Start Sequence                   -- SNMP packet start
                        , IntVal 0                             -- Error Index
                        , Start Sequence                       -- Variable binding list start
                        , Start Sequence                         -- 1st variable binding start
-                       , OID timeTicksOid                         -- Object name: sysUpTimeInstance
+                       , OID [1,3,6,1,2,1,1,3,0]                  -- Object name: sysUpTimeInstance
                        , Other Application 3 timeTicks            -- Time ticks
                        , End Sequence                           -- 1st variable binding end
                        , Start Sequence                         -- 2nd variable binding start
-                       , OID snmpTrapOid                          -- Object name: snmpTrapOID
-                       , OID snmpTrapOidValue                     -- SNMP Trap OID
+                       , OID [1,3,6,1,6,3,1,1,4,1,0]              -- Object name: snmpTrapOID
+                       , OID snmpTrapOid                          -- SNMP Trap OID
                        , End Sequence                           -- 2nd variable binding end
                        ] ++ varbind2 ++
                        [ End Sequence                         -- Variable binding list end
@@ -82,12 +78,17 @@ asn1Trap2Data cp sec = [ Start Sequence                   -- SNMP packet start
                        ]
   where community = C.pack $ either (const "public") id $ get cp sec "snmp_community"
         requestId = 12345 -- This should be random number. But This tool use fixed number for high performance.
-        timeTicksOid = [1,3,6,1,2,1,1,3,0]
         timeTicks = B.dropWhile (==0) $ encode (12345 :: Integer) -- This should be sysUpTime. But This tool use fixed number for high performance.
-        snmpTrapOid = [1,3,6,1,6,3,1,1,4,1,0]
-        snmpTrapOidValue = map (\s -> read s :: Integer) $ dropWhile (=="") $ splitOn "." $ forceEither $ get cp sec "snmptrap_oid"
-        varbindOids2 = filter (/="") $ splitOneOf " \n" $ either (const "") id $ get cp sec "varbind_oid"
-        varbindOid2 = map ( map (\s -> read s :: Integer) . dropWhile (=="") . splitOn "." ) varbindOids2
-        varbindMsgs2 = filter (/="") $ splitOneOf "\n" $ either (const "") id $ get cp sec "varbind_msg"
-        varbindMsg2 = map ( encodeUtf8 . T.pack ) varbindMsgs2
-        varbind2 = concat $ zipWith (\o m -> [Start Sequence, OID o, OctetString m, End Sequence]) varbindOid2 varbindMsg2
+        snmpTrapOid = map (\s -> read s :: Integer) $ dropWhile (=="") $ splitOn "." $ forceEither $ get cp sec "snmptrap_oid"
+        varbind2 = varBindData $ filter (/="") $ splitOneOf "\n" $ either (const "") id $ get cp sec "varbind"
+
+
+varBindData :: [String] -> [ASN1]
+varBindData [] = []
+varBindData (s:ss) = Start Sequence: oid: msg: End Sequence: varBindData ss
+  where o:t:m = words s
+        oid = OID (map (\s' -> read s' :: Integer) $ dropWhile (=="") $ splitOn "." o)
+        msg = case t of
+          "i" -> IntVal (read $ concat m)
+          _   -> OctetString (encodeUtf8 $ T.pack $ unwords m)
+
