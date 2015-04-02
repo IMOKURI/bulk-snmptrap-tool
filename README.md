@@ -1,4 +1,6 @@
 # snmptrapper
+
+[![Join the chat at https://gitter.im/IMOKURI/snmptrapper](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/IMOKURI/snmptrapper?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Tool that sends many SNMP traps for load test of SNMP manager  
 
 [![Build Status](https://travis-ci.org/IMOKURI/snmptrapper.svg?branch=master)](https://travis-ci.org/IMOKURI/snmptrapper)  
