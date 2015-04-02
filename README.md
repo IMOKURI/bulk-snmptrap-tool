@@ -1,5 +1,8 @@
 # snmptrapper
-Tool that sends many SNMP traps for load test of SNMP manager
+Tool that sends many SNMP traps for load test of SNMP manager  
+
+[![Build Status](https://travis-ci.org/IMOKURI/snmptrapper.svg?branch=master)](https://travis-ci.org/IMOKURI/snmptrapper)  
+
 
 ## Description
 
