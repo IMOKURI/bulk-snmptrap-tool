@@ -5,13 +5,19 @@ module ReadConfig
 , readConfig
 ) where
 
+import SNMPTrapType
+
 import Options.Applicative
 import Control.Exception
 import Control.Monad.Error
 import Data.ConfigFile
-import Data.Maybe (isJust, fromJust)
+import Data.Default
+import Data.Either (lefts, rights)
+import Data.Either.Utils (forceEither)
+import Data.List.Split (splitOn, splitOneOf)
+import GHC.Word (Word8)
 import Network.Socket (HostName, ServiceName)
-import System.Directory (doesFileExist)
+import System.Exit (exitFailure)
 
 data CommandLineOptions = CommandLineOptions { takeConfigFile :: FilePath
                                              , takeServerIp :: HostName
@@ -28,42 +34,62 @@ commandLineOptions = info ( helper <*> commandLineOptions')
 
 commandLineOptions' :: Parser CommandLineOptions
 commandLineOptions' = CommandLineOptions
-  <$> strOption   ( long "config" <> metavar "CONFIGFILE" <> help "CONFIGFILE that is used for sending SNMP traps" )
-  <*> strOption   ( long "host"   <> metavar "HOSTNAME"   <> help "HOSTNAME that is sent SNMP traps" )
-  <*> strOption   ( long "port"   <> metavar "PORT"       <> help "PORT that is sent SNMP traps"                <> value "162"   <> showDefault )
-  <*> option auto ( long "intval" <> metavar "INTERVAL"   <> help "Transmission INTERVAL (microsecond (10^-6))" <> value 1000000 <> showDefault )
-  <*> option auto ( long "timer"  <> metavar "TIMER"      <> help "Transmission TIMER (second)"                 <> value 10      <> showDefault )
+  <$> strOption   ( long "config" <> metavar "CONFIGFILE"         <> help "CONFIGFILE that is used for sending SNMP traps" )
+  <*> strOption   ( long "host"   <> metavar "HOSTNAME"           <> help "HOSTNAME that is sent SNMP traps" )
+  <*> strOption   ( long "port"   <> metavar "PORT"               <> help "PORT that is sent SNMP traps"                <> value "162"   <> showDefault )
+  <*> option auto ( long "intval" <> metavar "INTERVAL(microsec)" <> help "Transmission INTERVAL (microsecond (10^-6))" <> value 1000000 <> showDefault )
+  <*> option auto ( long "timer"  <> metavar "TIMER(sec)"         <> help "Transmission TIMER (second)"                 <> value 10      <> showDefault )
 
 
-readConfig :: CommandLineOptions -> IO (Either CPError ConfigParser)
-readConfig opts = runErrorT $ do
-  file <- liftIO $ do
-    existence <- doesFileExist (takeConfigFile opts)
-    if existence then return (takeConfigFile opts) else throwIO (ErrorCall "Configuration file does not exist.")
+readConfig :: CommandLineOptions -> IO [SNMPTrap]
+readConfig opts = do
+  cp <- forceEither <$> readfile emptyCP (takeConfigFile opts)
+  when (null (sections cp)) (throwIO $ ErrorCall "Section does not exist.")
 
-  cp <- join $ liftIO $ readfile emptyCP file
-
-  let chkTrapOps = checkTrapOptions cp (sections cp)
-
-  liftIO $ when (null (sections cp)) (throwIO $ ErrorCall "Section does not exist.")
-  liftIO $ when (isJust chkTrapOps) (throwIO $ ErrorCall $ show (fromJust chkTrapOps) ++ " is invalid or does not exist." )
-
-  return cp
+  let snmptraps = makeSNMPTrap cp (sections cp)
+  if null $ lefts snmptraps then return $ rights snmptraps else ((print $ head $ lefts snmptraps) >> exitFailure)
 
 
-checkTrapOptions :: ConfigParser -> [SectionSpec] -> Maybe (SectionSpec, OptionSpec)
-checkTrapOptions _ [] = Nothing
-checkTrapOptions cp (s:ss) | simpleAccess cp s "snmp_version" == Right "1" = checkTrapOption cp (s:ss) optionsList1
-                           | simpleAccess cp s "snmp_version" == Right "2c" = checkTrapOption cp (s:ss) optionsList2c
-                           | otherwise = Just (s, "snmp_version")
-  where checkTrapOption cp' (_:ss') [] = checkTrapOptions cp' ss'
-        checkTrapOption _ [] _ = Nothing
-        checkTrapOption cp' (s':ss') (o:os) | has_option cp' s' o = checkTrapOption cp' (s':ss') os
-                                            | otherwise           = Just (s', o)
+makeSNMPTrap :: ConfigParser -> [SectionSpec] -> [Either CPError SNMPTrap]
+makeSNMPTrap _ [] = []
+makeSNMPTrap cp (s:ss) = case simpleAccess cp s "snmp_version" of
+  Right "1"  -> makeSNMPTrap1 cp s: makeSNMPTrap cp ss
+  Right "2c" -> makeSNMPTrap2 cp s: makeSNMPTrap cp ss
+  Right _    -> Left (NoOption "snmp_version", "snmp_version of [" ++ s ++ "] is invalid."): makeSNMPTrap cp ss
+  Left err   -> Left err: makeSNMPTrap cp ss
 
-optionsList1 :: [OptionSpec]
-optionsList1 = ["enterprise_oid", "generic_trap", "specific_trap"]
 
-optionsList2c :: [OptionSpec]
-optionsList2c = ["snmptrap_oid"]
+makeSNMPTrap1 :: ConfigParser -> SectionSpec -> Either CPError SNMPTrap
+makeSNMPTrap1 cp1 s1 =
+  get cp1 s1 "snmp_community" `catchError` (return . const "public") >>= \comm ->
+    get cp1 s1 "agent_ip_address" `catchError` (return . const "127.0.0.1") >>= 
+    return . map (\s -> read s :: Word8) . splitOn "." >>= \agent ->
+      get cp1 s1 "enterprise_oid" >>=
+      return . map (\s -> read s :: Integer) . dropWhile (=="") . splitOn "." >>= \enterprise ->
+        get cp1 s1 "generic_trap" >>= \generic ->
+          get cp1 s1 "specific_trap" >>= \specific ->
+            get cp1 s1 "varbind" `catchError` (return . const "") >>=
+            return . filter (/="") . splitOneOf "\n" >>= \varbind ->
+              return def { takeSection = s1
+                         , takeVersion = "1"
+                         , takeCommunity = comm
+                         , takeAgentAddress = agent
+                         , takeEnterpriseId = enterprise
+                         , takeGenericTrap = generic
+                         , takeSpecificTrap = specific
+                         , takeVarBind = varbind }
+
+makeSNMPTrap2 :: ConfigParser -> SectionSpec -> Either CPError SNMPTrap
+makeSNMPTrap2 cp2 s2 =
+  get cp2 s2 "snmp_community" `catchError` (return . const "public") >>= \comm ->
+    get cp2 s2 "snmptrap_oid" >>=
+    return . map (\s -> read s :: Integer) . dropWhile (=="") . splitOn "." >>= \trapoid ->
+      get cp2 s2 "varbind" `catchError` (return . const "") >>=
+      return . filter (/="") . splitOneOf "\n" >>= \varbind ->
+        return def { takeSection = s2
+                   , takeVersion = "2c"
+                   , takeCommunity = comm
+                   , takeTrapOid = trapoid
+                   , takeVarBind = varbind }
+
 
