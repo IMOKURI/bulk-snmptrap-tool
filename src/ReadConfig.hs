@@ -10,18 +10,21 @@ import SNMPTrapType
 import Options.Applicative
 import Control.Exception
 import Control.Monad.Error
+import Data.ASN1.Types
 import Data.ConfigFile
 import Data.Default
 import Data.Either (lefts, rights)
 import Data.Either.Utils (forceEither)
 import Data.List.Split (splitOn, splitOneOf)
 import Data.Maybe (listToMaybe, mapMaybe)
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import GHC.Word (Word8)
 import Network.Socket (HostName, ServiceName)
 import System.Exit (exitFailure)
 
 data CommandLineOptions = CommandLineOptions { takeConfigFile :: FilePath
-                                             , takeServerIp :: HostName
+                                             , takeServerHost :: HostName
                                              , takeServerPort :: ServiceName
                                              , takeSendInterval :: Int
                                              , takeTimer :: Int }
@@ -74,7 +77,7 @@ makeSNMPTrap1 cp1 s1 = do
   generic    <- get cp1 s1 "generic_trap"
   specific   <- get cp1 s1 "specific_trap"
   varbind    <- get cp1 s1 "varbind" `catchError` (return . const "") >>=
-                return . filter (/="") . splitOneOf "\n"
+                makeVarBind . fmap words . filter (/="") . splitOneOf "\n"
 
   return def { takeSection = s1
              , takeVersion = "1"
@@ -94,12 +97,27 @@ makeSNMPTrap2 cp2 s2 = do
              then Left (ParseError "snmptrap_oid", "snmptrap_oid of [" ++ s2 ++ "] is invalid.")
              else return $ mapMaybe (fmap fst . listToMaybe . reads) $ dropWhile (=="") $ splitOn "." trapoid'
   varbind <- get cp2 s2 "varbind" `catchError` (return . const "") >>=
-             return . filter (/="") . splitOneOf "\n"
+             makeVarBind . fmap words . filter (/="") . splitOneOf "\n"
 
   return def { takeSection = s2
              , takeVersion = "2c"
              , takeCommunity = comm
              , takeTrapOid = trapoid
              , takeVarBind = varbind }
+
+
+makeVarBind :: [[String]] -> Either CPError [ASN1]
+makeVarBind [] = Right []
+makeVarBind (s:ss) = if null $ concatMap (\s' -> reads s' :: [(Integer,String)]) $ dropWhile (=="") $ splitOn "." $ head s
+                     then Left (ParseError "varbind", "Oid of '" ++ unwords s ++ "' is invalid.")
+                     else case s !! 1 of
+                          "s" -> (++) <$> Right [Start Sequence, oid s, msgstr s, End Sequence] <*> makeVarBind ss
+                          "i" -> if null $ (\i -> reads i :: [(Integer,String)]) $ concat $ drop 2 s
+                                 then Left (ParseError "varbind", "Value of '" ++ unwords s ++ "' is invalid.")
+                                 else (++) <$> Right [Start Sequence, oid s, msgint s, End Sequence] <*> makeVarBind ss
+                          _ -> Left (ParseError "varbind", "Type of '" ++ unwords s ++ "' is invalid.")
+  where oid so = OID (mapMaybe (fmap fst . listToMaybe . reads) $ dropWhile (=="") $ splitOn "." $ head so)
+        msgstr sstr = OctetString (encodeUtf8 $ T.pack $ unwords $ drop 2 sstr)
+        msgint sint = IntVal (read $ concat $ drop 2 sint)
 
 

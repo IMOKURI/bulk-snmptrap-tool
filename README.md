@@ -61,15 +61,16 @@ After specific time, each thread is stopped and output the number of sent trap.
 
 ## Install
 
-`$ runhaskell Setup configure`  
-`$ runhaskell Setup build`  
-`$ runhaskell Setup install`  
+`runhaskell Setup configure`  
+`runhaskell Setup build`  
+`runhaskell Setup install`  
 
 
 ## Usage
 
 ```
-Usage: snmptrapper --config CONFIGFILE --host HOSTNAME [--port PORT] [--intval INTERVAL] [--timer TIMER] [+RTS -N]
+Usage: snmptrapper --config CONFIGFILE --host HOSTNAME
+                   [--port PORT] [--intval INTERVAL(microsec)] [--timer TIMER(sec)] [+RTS -N]
 
 Available options:
   -h,--help                Show this help text

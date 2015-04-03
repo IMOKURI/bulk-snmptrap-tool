@@ -1,7 +1,9 @@
 name:                snmptrapper
 version:             0.1.0.0
 synopsis:            Tool that sends many SNMP traps for load test of SNMP manager
-description:         Send SNMP traps by multi threads. Each thread is made by each section in configurations file. After specific time, each thread is stopped. It outputs the number of sent trap.
+description:         Send SNMP traps by multi threads.
+                     Each thread is made by each section in configurations file.
+                     After specific time, each thread is stopped. It outputs the number of sent trap.
 homepage:            https://github.com/IMOKURI/snmptrapper
 license:             MIT
 license-file:        LICENSE

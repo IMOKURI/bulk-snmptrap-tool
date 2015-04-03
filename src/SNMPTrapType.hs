@@ -3,6 +3,7 @@ module SNMPTrapType
 ( SNMPTrap (..)
 ) where
 
+import Data.ASN1.Types (ASN1)
 import Data.ConfigFile (SectionSpec)
 import Data.Default
 import Data.Word (Word8)
@@ -15,8 +16,8 @@ data SNMPTrap = SNMPTrap { takeSection :: SectionSpec
                          , takeGenericTrap :: Integer
                          , takeSpecificTrap :: Integer
                          , takeTrapOid :: [Integer]
-                         , takeVarBind :: [String]
-                         } deriving Show
+                         , takeVarBind :: [ASN1]
+                         }
 
 instance Default SNMPTrap where
   def = SNMPTrap { takeSection = undefined
