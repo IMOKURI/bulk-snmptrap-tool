@@ -9,12 +9,9 @@ import Data.ASN1.Types
 import Data.ASN1.Encoding (encodeASN1)
 import Data.ASN1.BinaryEncoding
 import Data.Serialize (encode)
-import Data.List.Split (splitOn)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as C
-import qualified Data.Text as T
-import Data.Text.Encoding
 
 makeASN1TrapMsgs :: [SNMPTrap] -> [B.ByteString]
 makeASN1TrapMsgs [] = []
@@ -39,7 +36,7 @@ asn1Trap1Data s = [ Start Sequence                   -- SNMP packet start
                   , IntVal (takeSpecificTrap s)                  -- Specific trap
                   , Other Application 3 timeTicks        -- Time ticks
                   , Start Sequence                       -- Variable binding list start
-                  ] ++ (varBindData $ takeVarBind s) ++
+                  ] ++ (takeVarBind s) ++
                   [ End Sequence                         -- Variable binding list end
                   , End (Container Context 4)          -- SNMP trap pdu v1 end
                   , End Sequence                     -- SNMP Packaet end
@@ -64,7 +61,7 @@ asn1Trap2Data s = [ Start Sequence                   -- SNMP packet start
                   , OID [1,3,6,1,6,3,1,1,4,1,0]              -- Object name: snmpTrapOID
                   , OID (takeTrapOid s)                          -- SNMP Trap OID
                   , End Sequence                           -- 2nd variable binding end
-                  ] ++ (varBindData $ takeVarBind s) ++
+                  ] ++ (takeVarBind s) ++
                   [ End Sequence                         -- Variable binding list end
                   , End (Container Context 4)          -- SNMP trap pdu v2c end
                   , End Sequence                     -- SNMP Packaet end
@@ -72,13 +69,4 @@ asn1Trap2Data s = [ Start Sequence                   -- SNMP packet start
   where requestId = 12345 -- This should be random number. But This tool use fixed number for high performance.
         timeTicks = B.dropWhile (==0) $ encode (12345 :: Integer) -- This should be sysUpTime. But This tool use fixed number for high performance.
 
-
-varBindData :: [String] -> [ASN1]
-varBindData [] = []
-varBindData (s:ss) = Start Sequence: oid: msg: End Sequence: varBindData ss
-  where o:t:m = words s
-        oid = OID (map (\s' -> read s' :: Integer) $ dropWhile (=="") $ splitOn "." o)
-        msg = case t of
-          "i" -> IntVal (read $ concat m)
-          _   -> OctetString (encodeUtf8 $ T.pack $ unwords m)
 
