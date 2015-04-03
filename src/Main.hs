@@ -14,10 +14,12 @@ import Options.Applicative
 main :: IO ()
 main = do
   opts <- execParser commandLineOptions
-  sockAddr <- addrAddress <$> head <$> getAddrInfo Nothing (Just (takeServerIp opts)) (Just (takeServerPort opts))
 
   snmpTraps <- readConfig opts
   let trapMsgs = zip snmpTraps $ makeASN1TrapMsgs snmpTraps
+
+  sockAddr <- addrAddress <$> head <$> filter (\a -> addrFamily a == AF_INET)
+              <$> getAddrInfo Nothing (Just (takeServerHost opts)) (Just (takeServerPort opts))
 
 -- Flag of stopped process.
 --  -1: Send trap in progress.

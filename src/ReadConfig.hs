@@ -24,7 +24,7 @@ import Network.Socket (HostName, ServiceName)
 import System.Exit (exitFailure)
 
 data CommandLineOptions = CommandLineOptions { takeConfigFile :: FilePath
-                                             , takeServerIp :: HostName
+                                             , takeServerHost :: HostName
                                              , takeServerPort :: ServiceName
                                              , takeSendInterval :: Int
                                              , takeTimer :: Int }
