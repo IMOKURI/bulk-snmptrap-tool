@@ -63,7 +63,7 @@ asn1Trap2Data s = [ Start Sequence                   -- SNMP packet start
                   , End Sequence                           -- 2nd variable binding end
                   ] ++ (takeVarBind s) ++
                   [ End Sequence                         -- Variable binding list end
-                  , End (Container Context 4)          -- SNMP trap pdu v2c end
+                  , End (Container Context 7)          -- SNMP trap pdu v2c end
                   , End Sequence                     -- SNMP Packaet end
                   ]
   where requestId = 12345 -- This should be random number. But This tool use fixed number for high performance.
