@@ -22,6 +22,8 @@ before_install:
 
 install:
   - stack --no-terminal setup
+
+script:
   - stack --no-terminal build
 
 notifications:

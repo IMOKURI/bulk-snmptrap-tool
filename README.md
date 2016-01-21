@@ -98,7 +98,7 @@ may avoid this exception by adding with '+RTS -K???M' option. (default: 8M)
 
 ## LICENSE
 
-See LICENSE file
+See [LICENSE](https://github.com/IMOKURI/bulk-snmptrap-tool/blob/master/LICENSE) file
 
 
 ## Author
