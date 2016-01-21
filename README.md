@@ -27,6 +27,8 @@ After specific time, each thread is stopped and output the number of sent trap.
 
 ## Configuration file format
 
+Sample configuration file is [here](https://github.com/IMOKURI/bulk-snmptrap-tool/blob/master/sample_config.ini).
+
 * Specific information of each thread of sending traps.(SNMP v1)
 
 |Option            |Value                              |Description                                                 |
