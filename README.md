@@ -1,8 +1,8 @@
-# snmptrapper
+# bulk-snmptrap-tool
 
 Tool that sends many SNMP traps for load test of SNMP manager  
 
-[![Build Status](https://travis-ci.org/IMOKURI/snmptrapper.svg?branch=master)](https://travis-ci.org/IMOKURI/snmptrapper)  
+[![Build Status](https://travis-ci.org/IMOKURI/bulk-snmptrap-tool.svg?branch=master)](https://travis-ci.org/IMOKURI/bulk-snmptrap-tool)
 
 
 ## Description
@@ -61,25 +61,33 @@ After specific time, each thread is stopped and output the number of sent trap.
 
 ## Install
 
-`runhaskell Setup configure`  
-`runhaskell Setup build`  
-`runhaskell Setup install`  
+```
+git clone https://github.com/IMOKURI/bulk-snmptrap-tool.git
+stack setup
+stack install
+```
 
 
 ## Usage
 
 ```
-Usage: snmptrapper --config CONFIGFILE --host HOSTNAME
-                   [--port PORT] [--intval INTERVAL(microsec)] [--timer TIMER(sec)] [+RTS -N]
+Usage: bulk-snmptrap-tool --config CONFIGFILE --host HOSTNAME [--port PORT]
+                          [--intval INTERVAL(microsec)] [--timer TIMER(sec)]
+  You can use multi cores by adding with '+RTS -N' option to improve
+  performance.
 
 Available options:
   -h,--help                Show this help text
   --config CONFIGFILE      CONFIGFILE that is used for sending SNMP traps
   --host HOSTNAME          HOSTNAME that is sent SNMP traps
-  --port PORT              PORT that is sent SNMP traps (default: 162)
-  --intval INTERVAL        Transmission INTERVAL (microsecond (10^-6)) (default: 1000000)
-  --timer TIMER            Transmission TIMER (second) (default: 10)
-  +RTS -N                  You can use multi cores
+  --port PORT              PORT that is sent SNMP traps (default: "162")
+  --intval INTERVAL(microsec)
+                           Transmission INTERVAL (microsecond
+                           (10^-6)) (default: 1000000)
+  --timer TIMER(sec)       Transmission TIMER (second) (default: 10)
+
+If this program throw the StackOverflow Exception and you have huge memory, you
+may avoid this exception by adding with '+RTS -K???M' option. (default: 8M)
 ```
 
 
@@ -88,7 +96,12 @@ Available options:
 * Add tests.
 
 
-## Conversation
+## LICENSE
 
-[![Join the chat at https://gitter.im/IMOKURI/snmptrapper](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/IMOKURI/snmptrapper?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)  
+See LICENSE file
+
+
+## Author
+
+[IMOKURI](https://github.com/IMOKURI)
 

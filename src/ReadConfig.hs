@@ -9,7 +9,7 @@ import SNMPTrapType
 
 import Options.Applicative
 import Control.Exception
-import Control.Monad.Error
+import Control.Monad.Except
 import Data.ASN1.Types
 import Data.ConfigFile
 import Data.Default
@@ -32,7 +32,7 @@ data CommandLineOptions = CommandLineOptions { takeConfigFile :: FilePath
 commandLineOptions :: ParserInfo CommandLineOptions
 commandLineOptions = info ( helper <*> commandLineOptions')
                        ( fullDesc
-                       <> header "snmptrapper - Tool that send many SNMP traps for load test of SNMP manager"
+                       <> header "bulk-snmptrap-tool - Tool that send many SNMP traps for load test of SNMP manager"
                        <> progDesc "You can use multi cores by adding with '+RTS -N' option to improve performance."
                        <> footer "If this program throw the StackOverflow Exception and you have huge memory, you may avoid this exception by adding with '+RTS -K???M' option. (default: 8M)" )
 
